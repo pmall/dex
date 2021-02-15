@@ -28,7 +28,6 @@ type Absent = {
 type Result = Pending | Connected | Denied | Absent
 
 const connect = async (): Promise<Result> => {
-    // Modern DApp Browsers
     if (window.ethereum) {
         const web3 = new Web3(window.ethereum);
         try {
@@ -38,13 +37,10 @@ const connect = async (): Promise<Result> => {
             return { state: 'DENIED' }
         }
     }
-    // Legacy DApp Browsers
     else if (window.web3) {
         const web3 = new Web3(window.web3.currentProvider);
-
         return { state: 'CONNECTED', web3 }
     }
-    // Non-DApp Browsers
     else {
         return { state: 'ABSENT' }
     }
@@ -75,18 +71,16 @@ const ConnectedSection: React.FC<{ web3: Web3 }> = ({ web3 }) => {
     const [account, setAccount] = useState<string | null>(null)
 
     useEffect(() => {
-        const interval = setInterval(() => {
-            web3.eth.getAccounts((error, accounts) => {
-                setAccount(accounts[0])
-                if (error === null) return
-                console.log(error)
-            })
-        }, 100)
-
-        return () => clearInterval(interval)
+        web3.eth.getAccounts().then(accounts => setAccount(accounts[0]))
     }, [web3])
 
-    return account === null ? null : <p>Metamask connected with account: {account}</p>
+    useEffect(() => {
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', (accounts: string[]) => setAccount(accounts[0]))
+        }
+    }, [])
+
+    return account === null ? null : <p>Connected with account: {account}</p>
 }
 
 export default App;
